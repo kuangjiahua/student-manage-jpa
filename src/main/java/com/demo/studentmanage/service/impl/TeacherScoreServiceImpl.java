@@ -3,6 +3,7 @@ package com.demo.studentmanage.service.impl;
 import com.demo.studentmanage.dto.TeacherSubjectDto;
 import com.demo.studentmanage.dto.converter.TeacherScoreConverter;
 import com.demo.studentmanage.model.TeacherSubject;
+import com.demo.studentmanage.repository.TeacherSubjectMapper;
 import com.demo.studentmanage.repository.TeacherSubjectRepository;
 import com.demo.studentmanage.service.TeacherScoreService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,95 +24,56 @@ import java.util.stream.Collectors;
 @Service
 public class TeacherScoreServiceImpl implements TeacherScoreService {
 
-    private static final String AVG = "avg";
-    private static final String MAX = "max";
-    private static final String MIN = "min";
-
     @Autowired
-    private TeacherSubjectRepository teacherSubjectRepository;
+    private TeacherSubjectMapper teacherSubjectMapper;
 
-    @Autowired
-    public EntityManager entityManager;
 
     @Override
     public List<TeacherSubjectDto> listAvgScorePage(TeacherSubjectDto teacherSubjectDto) {
-        return listScoreByType(teacherSubjectDto, AVG);
+        return teacherSubjectMapper.listAvgScore(teacherSubjectDto);
     }
 
     @Override
     public List<TeacherSubjectDto> listMaxScorePage(TeacherSubjectDto teacherSubjectDto) {
-        return listScoreByType(teacherSubjectDto, MAX);
+        return teacherSubjectMapper.listMaxScore(teacherSubjectDto);
     }
 
     @Override
     public List<TeacherSubjectDto> listMinScorePage(TeacherSubjectDto teacherSubjectDto) {
-        return listScoreByType(teacherSubjectDto, MIN);
-    }
-
-    public List<TeacherSubjectDto> listScoreByType(TeacherSubjectDto teacherSubjectDto, String type) {
-        StringBuffer sb =  new StringBuffer(" select ");
-        if(AVG.equals(type)){
-            sb.append(" avg(score) ");
-        } else if( MAX.equals(type)) {
-            sb.append(" max(score) ");
-        } else if( MIN.equals(type)){
-            sb.append(" min(score) ");
-        }
-        sb.append(" as score , a.subject_id as subjectId ");
-        sb.append(" from score a inner join teacher_subject b  on a.subject_id = b.subject_id ");
-        sb.append(" and a.school_year = b.school_year ");
-        sb.append(" where b.teacher_id = ").append(teacherSubjectDto.getTeacherId());
-        sb.append(" and b.school_year = ").append(teacherSubjectDto.getSchoolYear());
-        sb.append(" group by a.subject_id limit ").append(teacherSubjectDto.getStart()).append(teacherSubjectDto.getSize());
-        List<Object[]> list = entityManager.createNativeQuery(sb.toString()).getResultList();
-        return list.stream().map(TeacherScoreConverter::converterObjectToDto).collect(Collectors.toList());
+        return teacherSubjectMapper.listMinScore(teacherSubjectDto);
     }
 
 
     @Override
     public boolean saveTeacherSubject(TeacherSubjectDto teacherSubjectDto) {
         //校验教师学科关系是否已经存在
-        if(findExistTeacherSubject(teacherSubjectDto) != null){
+        if(teacherSubjectMapper.findByCondition(teacherSubjectDto) != null){
             return false;
         }
         TeacherSubject teacherSubject = TeacherScoreConverter.convertDtoToModel(teacherSubjectDto);
-        teacherSubjectRepository.save(teacherSubject);
+        teacherSubjectMapper.saveTeacherSubject(teacherSubject);
         return true;
     }
 
     @Override
     public boolean updateTeacherSubject(TeacherSubjectDto teacherSubjectDto) {
         //校验当前id对应数据是否存在
-        TeacherSubject teacherSubjectExist = teacherSubjectRepository.findById(teacherSubjectDto.getId()).orElse(null);
+        TeacherSubject teacherSubjectExist = teacherSubjectMapper.findById(teacherSubjectDto.getId());
         if(teacherSubjectExist == null) {
             return false;
         }
         //校验更新信息是否导致重复
-        TeacherSubject teacherSubjectRepeat = findExistTeacherSubject(teacherSubjectDto);
+        TeacherSubject teacherSubjectRepeat = teacherSubjectMapper.findByCondition(teacherSubjectDto);
         if(teacherSubjectRepeat != null && !teacherSubjectRepeat.getId().equals(teacherSubjectDto.getId())){
             return false;
         }
-        teacherSubjectExist.setTeacherId(teacherSubjectDto.getTeacherId());
-        teacherSubjectExist.setSchoolYear(teacherSubjectDto.getSchoolYear());
-        teacherSubjectExist.setSubjectId(teacherSubjectDto.getSubjectId());
-        teacherSubjectRepository.save(teacherSubjectExist);
+        teacherSubjectMapper.updateTeacherSubject(teacherSubjectDto);
         return false;
     }
 
-    private TeacherSubject findExistTeacherSubject(TeacherSubjectDto teacherSubjectDto){
-        Specification<TeacherSubject> specification = (Specification<TeacherSubject>) (root, query, criteriaBuilder) -> {
-            ArrayList<Predicate> list = new ArrayList<>();
-            list.add(criteriaBuilder.equal(root.get("teacherId"), teacherSubjectDto.getTeacherId()));
-            list.add(criteriaBuilder.equal(root.get("subjectId"), teacherSubjectDto.getSubjectId()));
-            list.add(criteriaBuilder.equal(root.get("schoolYear"), teacherSubjectDto.getSchoolYear()));
-            Predicate[] predicates = new Predicate[list.size()];
-            return criteriaBuilder.and(list.toArray(predicates));
-        };
-        return teacherSubjectRepository.findOne(specification).orElse(null);
-    }
 
     @Override
     public void deleteTeacherSubject(int id) {
-        teacherSubjectRepository.deleteById(id);
+        teacherSubjectMapper.deleteById(id);
     }
 }
