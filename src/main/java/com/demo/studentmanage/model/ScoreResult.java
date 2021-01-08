@@ -1,12 +1,11 @@
 package com.demo.studentmanage.model;
 
-
 import lombok.Data;
 
 @Data
-public class TeacherSubject {
+public class ScoreResult {
 
-    private Integer id;
+    private Integer studentId;
 
     private Integer teacherId;
 
@@ -14,8 +13,5 @@ public class TeacherSubject {
 
     private String schoolYear;
 
-    private Teacher teacher;
-
-    private Subject subject;
-
+    private Double score;
 }

@@ -1,21 +1,19 @@
 package com.demo.studentmanage.model;
 
-
 import lombok.Data;
 
 @Data
-public class TeacherSubject {
+public class StudentSubject {
 
     private Integer id;
 
-    private Integer teacherId;
+    private Integer studentId;
 
     private Integer subjectId;
 
-    private String schoolYear;
-
-    private Teacher teacher;
+    private Student student;
 
     private Subject subject;
 
+    private String schoolYear;
 }

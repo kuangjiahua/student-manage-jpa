@@ -10,9 +10,9 @@ import lombok.Data;
 @Data
 public class PageRequest {
 
-    private int start;
+    private Integer start;
 
-    private int size;
+    private Integer size;
 
 
 }
